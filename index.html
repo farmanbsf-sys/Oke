@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#075532">
+    <title>River Impact Cisadane — Interceptor 020</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js, SheetJS, jsPDF -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-100 h-full flex flex-col text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 text-center relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-36 h-36 bg-emerald-100 rounded-full blur-2xl opacity-60"></div>
+            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl font-extrabold mx-auto mb-4 shadow-sm border border-emerald-100">
+                🌊
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">River Impact Cisadane</h1>
+            <p class="text-xs text-slate-500 mt-1">Sistem Monitoring dan Pengelolaan Persampahan</p>
+            <div class="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full my-4 border border-emerald-100">
+                Interceptor 020 
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-left mt-2">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Username</label>
+                    <input type="text" id="loginUsername" required value="admin" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required value="admin123" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                </div>
+                <button type="submit" class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl shadow-lg shadow-emerald-700/20 transition flex items-center justify-center space-x-2">
+                    <span>Masuk ke Sistem</span>
+                </button>
+            </form>
+            <p class="text-[11px] text-slate-400 mt-6">Demo Login: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">admin</code> / <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">admin123</code></p>
+        </div>
+    </div>
+
+    <!-- Main App UI -->
+    <div id="app" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+        <header class="bg-emerald-900 text-white shadow-md z-40 shrink-0">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleSidebar()" class="p-2 hover:bg-emerald-800 rounded-xl transition lg:hidden text-emerald-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                    <div class="w-10 h-10 bg-emerald-800 text-emerald-200 rounded-xl flex items-center justify-center font-bold text-lg shadow-inner">
+                        🌊
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold leading-tight">River Impact Cisadane</h1>
+                        <p class="text-[11px] text-emerald-300">Interceptor 020 </p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Sync Indicator -->
+                    <button onclick="syncToSheets()" id="syncBadge" class="hidden sm:flex items-center space-x-1.5 px-3 py-1 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs font-medium rounded-full border border-emerald-700 transition" title="Klik untuk Sinkronisasi Manual">
+                        <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="syncText">Siap Sinkronisasi</span>
+                    </button>
+                    <span id="currentUser" class="hidden md:inline-flex px-3 py-1 bg-emerald-800/80 text-emerald-100 text-xs font-medium rounded-full border border-emerald-700/50"></span>
+                    <button onclick="logout()" class="p-2 bg-emerald-800 hover:bg-emerald-700 text-emerald-200 rounded-xl transition flex items-center space-x-1 text-xs font-medium" title="Keluar">
+                        <span>Keluar</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden relative">
+            <!-- Sidebar Navigation -->
+            <aside id="sidebar" class="absolute lg:relative inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 shadow-xl lg:shadow-none">
+                <div class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-1">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Menu Utama</div>
+                    <button onclick="switchPage('dashboard')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition active" data-page="dashboard">
+                        <span class="text-base">📊</span> <span>Dashboard</span>
+                    </button>
+                    <button onclick="switchPage('input-sungai')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="input-sungai">
+                        <span class="text-base">➕</span> <span>Input Sampah Sungai</span>
+                    </button>
+                    <button onclick="switchPage('input-warga')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="input-warga">
+                        <span class="text-base">🏠</span> <span>Input Sampah Warga</span>
+                    </button>
+                    <button onclick="switchPage('input-muatan')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="input-muatan">
+                        <span class="text-base">🚛</span> <span>Input Muatan Truk Keluar</span>
+                    </button>
+
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mt-6 mb-2">Database & Log</div>
+                    <button onclick="switchPage('sungai')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="sungai">
+                        <span class="text-base">🌊</span> <span>Data Sampah Sungai</span>
+                    </button>
+                    <button onclick="switchPage('warga')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="warga">
+                        <span class="text-base">🏘️</span> <span>Data Sampah Warga</span>
+                    </button>
+                    <button onclick="switchPage('muatan')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="muatan">
+                        <span class="text-base">📋</span> <span>Data Muatan Keluar</span>
+                    </button>
+                    <button onclick="switchPage('audit')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="audit">
+                        <span class="text-base">🛡️</span> <span>audit_logs</span>
+                    </button>
+                    <button onclick="switchPage('sync-log')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="sync-log">
+                        <span class="text-base">⚡</span> <span>_SYNC_LOG</span>
+                    </button>
+                    <button onclick="switchPage('neraca')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="neraca">
+                        <span class="text-base">⚖</span> <span>Neraca Sampah</span>
+                    </button>
+                    <button onclick="switchPage('laporan')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="laporan">
+                        <span class="text-base">📑</span> <span>Laporan & Ekspor</span>
+                    </button>
+                    <button onclick="switchPage('pengaturan')" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition" data-page="pengaturan">
+                        <span class="text-base">⚙</span> <span>Google Sheets & Sistem</span>
+                    </button>
+                </div>
+                <div class="p-4 border-t border-slate-100 bg-slate-50 text-center">
+                    <p class="text-[11px] font-bold text-slate-500">RIVER IMPACT CISADANE</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Farman v2.0</p>
+                    <button onclick="resetAllData()" class="mt-3 w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl transition border border-rose-100">
+                        Reset Semua Data
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-8 bg-slate-50">
+                
+                <!-- Dashboard View -->
+                <section id="page-dashboard" class="page-view space-y-6 max-w-7xl mx-auto">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div>
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">Monitoring Live & Google Sheets</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Dashboard Utama</h2>
+                            <p class="text-xs text-slate-500">Rekap operasional persampahan tersinkronisasi otomatis ke Google Sheets.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <button onclick="syncToSheets()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl shadow transition flex items-center space-x-1.5">
+                                <span>⚡ Sheets</span>
+                            </button>
+                            <select id="periodFilter" onchange="onPeriodChange()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                                <option value="today">Hari Ini</option>
+                                <option value="yesterday">Kemarin</option>
+                                <option value="7days">7 Hari Terakhir</option>
+                                <option value="month">Bulan Ini</option>
+                                <option value="year">Tahun Ini</option>
+                                <option value="all">Semua Waktu</option>
+                                <option value="custom">Custom Date</option>
+                            </select>
+                            <input type="date" id="customStart" onchange="renderDashboard()" class="hidden px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                            <input type="date" id="customEnd" onchange="renderDashboard()" class="hidden px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+                        </div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between relative overflow-hidden">
+                            <div class="absolute right-0 bottom-0 translate-x-4 translate-y-4 w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-4xl opacity-50">🌊</div>
+                            <div>
+                                <span class="text-[11px] font-bold tracking-wider text-blue-600 uppercase">Sampah Sungai</span>
+                                <h3 id="statSungai" class="text-3xl font-extrabold text-slate-900 mt-1">0 kg</h3>
+                                <p id="countSungai" class="text-xs text-slate-400 mt-1">0 catatan terekam</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between relative overflow-hidden">
+                            <div class="absolute right-0 bottom-0 translate-x-4 translate-y-4 w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center text-4xl opacity-50">🏠</div>
+                            <div>
+                                <span class="text-[11px] font-bold tracking-wider text-amber-600 uppercase">Sampah Warga</span>
+                                <h3 id="statWarga" class="text-3xl font-extrabold text-slate-900 mt-1">0 kg</h3>
+                                <p id="countWarga" class="text-xs text-slate-400 mt-1">0 catatan terekam</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between relative overflow-hidden">
+                            <div class="absolute right-0 bottom-0 translate-x-4 translate-y-4 w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center text-4xl opacity-50">🚛</div>
+                            <div>
+                                <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">Muatan Keluar (Truk)</span>
+                                <h3 id="statTruk" class="text-3xl font-extrabold text-slate-900 mt-1">0 Ton</h3>
+                                <p id="countTruk" class="text-xs text-slate-400 mt-1">0 pengangkutan</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="text-sm font-bold text-slate-900 mb-4">Tren Sampah Masuk Harian (kg)</h3>
+                            <div class="h-64"><canvas id="dailyChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="text-sm font-bold text-slate-900 mb-4">Perbandingan Sumber Sampah</h3>
+                            <div class="h-64 flex justify-center"><canvas id="sourceChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Table -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-slate-900">Aktivitas Pencatatan Terbaru</h3>
+                            <button onclick="switchPage('sungai')" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700">Lihat Semua →</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Tanggal</th>
+                                        <th class="p-3">Sumber</th>
+                                        <th class="p-3">Lokasi / Wilayah</th>
+                                        <th class="p-3">Berat</th>
+                                        <th class="p-3">Petugas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentTable" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Input Sampah Sungai -->
+                <section id="page-input-sungai" class="page-view hidden space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="mb-6">
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">FORMULIR PENCATATAN</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Tambah Data Sampah Sungai</h2>
+                            <p class="text-xs text-slate-500">Catat hasil pengambilan sampah sungai Interceptor 020 (otomatis sinkron ke sheet: <code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-700 font-bold">sampah_sungai</code>).</p>
+                        </div>
+
+                        <form id="sungaiForm" onsubmit="saveSungai(event)" class="space-y-4">
+                            <input type="hidden" id="sungaiId">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                                    <input type="date" id="sTanggal" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jam</label>
+                                    <input type="time" id="sJam" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Lokasi Pengambilan</label>
+                                    <input type="text" id="sLokasi" required value="Interceptor 020 Cisadane" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Petugas</label>
+                                    <input type="text" id="sPetugas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Berat Sampah (kg)</label>
+                                    <input type="number" id="sBerat" step="0.01" min="0" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jenis Sampah Dominan</label>
+                                    <select id="sJenis" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option>Anorganik</option>
+                                        <option>Organik</option>
+                                        <option>Kayu</option>
+                                        <option>Residu</option>
+                                        <option>Lainnya</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Metode Pengambilan</label>
+                                    <select id="sMetode" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option>Conveyor / Interceptor 020</option>
+                                        <option>Pembersihan Manual Slipway</option>
+                                        <option>Alat Berat</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Foto Dokumentasi (Opsional)</label>
+                                    <input type="file" id="sFoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Tambahan</label>
+                                <textarea id="sCatatan" rows="3" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Kondisi arus, cuaca, dll..."></textarea>
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-4">
+                                <button type="button" onclick="resetSungaiForm()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">Reset</button>
+                                <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition">Simpan & Sinkronkan</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Input Sampah Warga -->
+                <section id="page-input-warga" class="page-view hidden space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="mb-6">
+                            <span class="text-[11px] font-bold tracking-wider text-amber-600 uppercase">FORMULIR PENCATATAN</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Tambah Data Sampah Warga</h2>
+                            <p class="text-xs text-slate-500">Catat sampah dari permukiman warga (otomatis sinkron ke sheet: <code class="bg-slate-100 px-1 py-0.5 rounded text-amber-700 font-bold">sampah_warga</code>).</p>
+                        </div>
+
+                        <form id="wargaForm" onsubmit="saveWarga(event)" class="space-y-4">
+                            <input type="hidden" id="wargaId">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                                    <input type="date" id="wTanggal" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Wilayah / TPS</label>
+                                    <input type="text" id="wWilayah" required value="Desa Tanjung Burung / Kali Baru" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">RT / RW</label>
+                                    <input type="text" id="wRtRw" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="001 / 005">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Petugas / Pengumpul</label>
+                                    <input type="text" id="wPetugas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Perkiraan Jumlah Rumah / KK</label>
+                                    <input type="number" id="wJumlah" min="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="150">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Berat Sampah (kg)</label>
+                                    <input type="number" id="wBerat" step="0.01" min="0" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="0.00">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jenis Sampah Dominan</label>
+                                    <select id="wJenis" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option>Campuran</option>
+                                        <option>Organik</option>
+                                        <option>Plastik</option>
+                                        <option>Kertas</option>
+                                        <option>Lainnya</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Foto Dokumentasi</label>
+                                    <input type="file" id="wFoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan</label>
+                                <textarea id="wCatatan" rows="3" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Keterangan tambahan..."></textarea>
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-4">
+                                <button type="button" onclick="resetWargaForm()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">Reset</button>
+                                <button type="submit" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow transition">Simpan & Sinkronkan</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Input Muatan Truk Keluar -->
+                <section id="page-input-muatan" class="page-view hidden space-y-6 max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="mb-6">
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">LOGISTIK TRUK KELUAR</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Input Muatan Truk Keluar</h2>
+                            <p class="text-xs text-slate-500">Catat pengangkutan truk ke TPA (otomatis sinkron ke sheet: <code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-700 font-bold">muatan_keluar</code>).</p>
+                        </div>
+
+                        <form id="muatanForm" onsubmit="saveMuatan(event)" class="space-y-4">
+                            <input type="hidden" id="muatanId">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+                                    <input type="date" id="mTanggal" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nomor Polisi / Truk</label>
+                                    <input type="text" id="mNomorArmada" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Contoh: B 9074 NAP">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Pengemudi / Sopir</label>
+                                    <input type="text" id="mDriver" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Berat Muatan</label>
+                                    <div class="flex space-x-2">
+                                        <input type="number" id="mBerat" step="0.01" min="0" required class="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="0.00">
+                                        <select id="mUnit" class="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold">
+                                            <option value="kg">kg</option>
+                                            <option value="ton">Ton</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tujuan Pembuangan / TPST</label>
+                                    <input type="text" id="mTujuan" required value="TPA" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Petugas Timbang</label>
+                                    <input type="text" id="mPetugas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Foto Tiket Timbang</label>
+                                    <input type="file" id="mFoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan Tambahan</label>
+                                <textarea id="mCatatan" rows="3" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm" placeholder="Keterangan pengangkutan..."></textarea>
+                            </div>
+                            <div class="flex justify-end space-x-3 pt-4">
+                                <button type="button" onclick="resetMuatanForm()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">Reset</button>
+                                <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition">Simpan & Sinkronkan</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Data Sampah Sungai -->
+                <section id="page-sungai" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">SHEET: sampah_sungai</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Data Sampah Sungai</h2>
+                        </div>
+                        <button onclick="switchPage('input-sungai')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition">+ Tambah Data</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="text" id="searchSungai" oninput="renderSungaiTable()" placeholder="🔍 Cari lokasi, petugas, jenis..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            <select id="filterJenisSungai" onchange="renderSungaiTable()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                                <option value="">Semua Jenis</option>
+                                <option>Plastik</option><option>Organik</option><option>Kayu</option><option>Styrofoam</option><option>Kain</option><option>Logam</option><option>Campuran</option><option>Lainnya</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Tanggal / Jam</th>
+                                        <th class="p-3">Lokasi</th>
+                                        <th class="p-3">Petugas</th>
+                                        <th class="p-3">Berat</th>
+                                        <th class="p-3">Jenis</th>
+                                        <th class="p-3">Metode</th>
+                                        <th class="p-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sungaiTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Sampah Warga -->
+                <section id="page-warga" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span class="text-[11px] font-bold tracking-wider text-amber-600 uppercase">SHEET: sampah_warga</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Data Sampah Warga</h2>
+                        </div>
+                        <button onclick="switchPage('input-warga')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow transition">+ Tambah Data</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <input type="text" id="searchWarga" oninput="renderWargaTable()" placeholder="🔍 Cari wilayah, RT/RW, petugas..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Tanggal</th>
+                                        <th class="p-3">Wilayah</th>
+                                        <th class="p-3">RT/RW</th>
+                                        <th class="p-3">Petugas</th>
+                                        <th class="p-3">Berat</th>
+                                        <th class="p-3">Jenis</th>
+                                        <th class="p-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wargaTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Muatan Keluar -->
+                <section id="page-muatan" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">SHEET: muatan_keluar</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Data Muatan Truk Keluar</h2>
+                        </div>
+                        <button onclick="switchPage('input-muatan')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow transition">+ Tambah Muatan</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <input type="text" id="searchMuatan" oninput="renderMuatanTable()" placeholder="🔍 Cari nomor armada, sopir, tujuan..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Tanggal</th>
+                                        <th class="p-3">No. Armada / Truk</th>
+                                        <th class="p-3">Sopir</th>
+                                        <th class="p-3">Berat</th>
+                                        <th class="p-3">Tujuan</th>
+                                        <th class="p-3">Petugas</th>
+                                        <th class="p-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="muatanTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Audit Logs -->
+                <section id="page-audit" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">SHEET: audit_logs</span>
+                        <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Audit Logs Perubahan Sistem</h2>
+                        <p class="text-xs text-slate-500">Mencatat riwayat penambahan, perubahan, dan penghapusan data secara transparan.</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Timestamp</th>
+                                        <th class="p-3">User</th>
+                                        <th class="p-3">Aksi</th>
+                                        <th class="p-3">Kategori</th>
+                                        <th class="p-3">Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- _SYNC_LOG -->
+                <section id="page-sync-log" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                        <div>
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">SHEET: _SYNC_LOG</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Log Sinkronisasi Google Sheets</h2>
+                            <p class="text-xs text-slate-500">Status sinkronisasi otomatis ke cloud spreadsheet.</p>
+                        </div>
+                        <button onclick="syncToSheets()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow">Sinkronkan Sekarang</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-3">Waktu Sinkron</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3">Jumlah Record Terkirim</th>
+                                        <th class="p-3">Pesan / Respon</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="syncLogTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Neraca Sampah -->
+                <section id="page-neraca" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">ANALISIS</span>
+                        <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Rekapitulasi Arus Sampah</h2>
+                        <p class="text-xs text-slate-500">Perbandingan total sampah masuk (sungai & warga) dengan total muatan keluar.</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Total Sampah Sungai</span>
+                                <h3 id="nSungai" class="text-3xl font-extrabold text-blue-600 mt-2">0 kg</h3>
+                            </div>
+                            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Total Sampah Warga</span>
+                                <h3 id="nWarga" class="text-3xl font-extrabold text-amber-600 mt-2">0 kg</h3>
+                            </div>
+                            <div class="p-6 bg-emerald-50 rounded-2xl border border-emerald-200">
+                                <span class="text-xs font-bold text-emerald-700 uppercase">Total Sampah Masuk</span>
+                                <h3 id="nMasuk" class="text-3xl font-extrabold text-emerald-800 mt-2">0 kg</h3>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-6 text-center pt-4 border-t border-slate-100 max-w-md mx-auto">
+                            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                                <span class="text-xs font-bold text-slate-400 uppercase">Total Muatan Truk Keluar</span>
+                                <h3 id="nKeluar" class="text-3xl font-extrabold text-slate-900 mt-2">0 kg</h3>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Laporan & Ekspor -->
+                <section id="page-laporan" class="page-view hidden space-y-6 max-w-7xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">DOKUMEN</span>
+                            <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Laporan & Ekspor Data</h2>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="exportExcel()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow">📊 Ekspor Excel</button>
+                            <button onclick="exportPDF()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl shadow">📄 Cetak PDF</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input type="text" id="repLokasi" oninput="renderReportTable()" placeholder="Cari lokasi / wilayah..." class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            <select id="repJenis" onchange="renderReportTable()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                                <option value="">Semua Jenis Sampah</option>
+                                <option>Plastik</option><option>Organik</option><option>Kayu</option><option>Styrofoam</option><option>Kain</option><option>Logam</option><option>Campuran</option>
+                            </select>
+                            <input type="text" id="repPetugas" oninput="renderReportTable()" placeholder="Cari petugas..." class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 text-slate-500 uppercase font-semibold">
+                                    <tr><th class="p-3">Tanggal</th><th class="p-3">Sumber</th><th class="p-3">Lokasi / Keterangan</th><th class="p-3">Berat</th><th class="p-3">Petugas</th><th class="p-3">Jenis / Tujuan</th></tr>
+                                </thead>
+                                <tbody id="reportTableBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Pengaturan Google Sheets -->
+                <section id="page-pengaturan" class="page-view hidden space-y-6 max-w-4xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <span class="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">KONFIGURASI CLOUD</span>
+                        <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Google Sheets & Apps Script Setup</h2>
+                        <p class="text-xs text-slate-500">Hubungkan sistem web ini dengan Google Spreadsheet melalui Web App URL (otomatis membuat sheets: <code class="bg-slate-100 px-1 rounded text-emerald-700">sampah_sungai</code>, <code class="bg-slate-100 px-1 rounded text-emerald-700">sampah_warga</code>, <code class="bg-slate-100 px-1 rounded text-emerald-700">muatan_keluar</code>, <code class="bg-slate-100 px-1 rounded text-emerald-700">audit_logs</code>, <code class="bg-slate-100 px-1 rounded text-emerald-700">_SYNC_LOG</code>).</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-900">URL Google Apps Script Web App</h3>
+                        <p class="text-xs text-slate-500">Tempel URL hasil deploy Google Apps Script di bawah ini:</p>
+                        <div class="flex space-x-2">
+                            <input type="url" id="sheetsApiUrl" placeholder="https://script.google.com/macros/s/..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+                            <button onclick="saveApiUrl()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow">Simpan URL</button>
+                        </div>
+                        <div id="connectionStatus" class="text-xs font-semibold text-slate-500">Status: Belum terhubung</div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-900">Petunjuk Pembuatan Google Sheets & Apps Script Otomatis</h3>
+                        <ol class="list-decimal list-inside text-xs text-slate-600 space-y-2">
+                            <li>Buat Google Sheet baru di Google Drive Anda.</li>
+                            <li>Buka menu <b>Extensions > Apps Script</b>.</li>
+                            <li>Hapus kode bawaan dan salin kode Apps Script di bawah ini.</li>
+                            <li>Klik <b>Deploy > New Deployment</b>, pilih jenis <b>Web app</b>.</li>
+                            <li>Set <i>Execute as: Me</i> dan <i>Who has access: Anyone</i>.</li>
+                            <li>Salin URL Web App yang dihasilkan dan tempel ke kolom di atas.</li>
+                        </ol>
+
+                        <div class="mt-4">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-slate-700">Kode Google Apps Script (Auto-Create Sheets):</span>
+                                <button onclick="copyAppsScriptCode()" class="text-xs text-emerald-600 hover:text-emerald-700 font-bold">Salin Kode</button>
+                            </div>
+                            <textarea id="scriptCodeBox" rows="12" readonly class="w-full p-3 bg-slate-900 text-emerald-300 font-mono text-[11px] rounded-xl selection:bg-emerald-500 selection:text-white">
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Auto-create required sheets if not exist
+    var sheetNames = ['sampah_sungai', 'sampah_warga', 'muatan_keluar', 'audit_logs', '_SYNC_LOG'];
+    sheetNames.forEach(function(name) {
+      if (!ss.getSheetByName(name)) {
+        var sh = ss.insertSheet(name);
+        if (name === 'sampah_sungai') {
+          sh.appendRow(['ID', 'Tanggal', 'Jam', 'Lokasi', 'Petugas', 'Berat (kg)', 'Jenis Sampah', 'Metode', 'Catatan']);
+        } else if (name === 'sampah_warga') {
+          sh.appendRow(['ID', 'Tanggal', 'Wilayah', 'RT/RW', 'Petugas', 'Jumlah KK', 'Berat (kg)', 'Jenis Sampah', 'Catatan']);
+        } else if (name === 'muatan_keluar') {
+          sh.appendRow(['ID', 'Tanggal', 'No Armada', 'Driver', 'Berat (kg)', 'Tujuan', 'Petugas', 'Catatan']);
+        } else if (name === 'audit_logs') {
+          sh.appendRow(['Timestamp', 'User', 'Aksi', 'Kategori', 'Keterangan']);
+        } else if (name === '_SYNC_LOG') {
+          sh.appendRow(['Timestamp', 'Status', 'Record Count', 'Message']);
+        }
+      }
+    });
+
+    // Write data based on action type
+    if (data.action === 'sync') {
+      if (data.sungai) updateSheetData(ss, 'sampah_sungai', data.sungai, ['id', 'tanggal', 'jam', 'lokasi', 'petugas', 'berat_kg', 'jenis_sampah', 'metode', 'catatan']);
+      if (data.warga) updateSheetData(ss, 'sampah_warga', data.warga, ['id', 'tanggal', 'wilayah', 'rt_rw', 'petugas', 'jumlah_warga', 'berat_kg', 'jenis_sampah', 'catatan']);
+      if (data.muatan) updateSheetData(ss, 'muatan_keluar', data.muatan, ['id', 'tanggal', 'nomor_armada', 'driver', 'berat_kg', 'tujuan', 'petugas', 'catatan']);
+      
+      var logSh = ss.getSheetByName('_SYNC_LOG');
+      logSh.appendRow([new Date(), 'SUCCESS', (data.sungai.length + data.warga.length + data.muatan.length), 'Sync completed successfully']);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({status: 'success'})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function updateSheetData(ss, sheetName, items, keys) {
+  var sh = ss.getSheetByName(sheetName);
+  if (sh.getLastRow() > 1) {
+    sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+  }
+  items.forEach(function(item) {
+    var row = keys.map(function(k) { return item[k] || ''; });
+    sh.appendRow(row);
+  });
+}
+                            </textarea>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                        <h3 class="text-sm font-bold text-slate-900">Backup & Restore Sistem (.json)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button onclick="backupJSON()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow">⬇ Download Backup JSON</button>
+                            <input type="file" id="restoreFile" accept=".json" onchange="restoreJSON(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200">
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2">
+        <span id="toastIcon">✨</span>
+        <span id="toastMessage">Pesan sukses</span>
+    </div>
+
+    <script>
+        const STORAGE_KEY = "river_impact_cisadane_sheets_v2";
+
+        let state = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {
+            currentUser: null,
+            apiUrl: "",
+            sungai: [
+                { id: "s1", tanggal: "2026-10-01", jam: "08:30", lokasi: "Interceptor 020 Cisadane", petugas: "Rey", berat_kg: 450.5, jenis_sampah: "Plastik", metode: "Conveyor / Interceptor 020", catatan: "Sampah botol plastik dominan." },
+                { id: "s2", tanggal: "2026-10-03", jam: "09:15", lokasi: "Interceptor 020 Cisadane", petugas: "Rey", berat_kg: 320.0, jenis_sampah: "Organik", metode: "Jaring Apung", catatan: "Sampah ranting dan eceng gondok." }
+            ],
+            warga: [
+                { id: "w1", tanggal: "2026-10-02", wilayah: "Desa Tanjung Burung / Kali Baru", rt_rw: "001/005", petugas: "acan", jumlah_warga: 120, berat_kg: 680.0, jenis_sampah: "Campuran", catatan: "Pengumpulan rutin mingguan TPS." }
+            ],
+            muatan: [
+                { id: "m1", tanggal: "2026-10-03", nomor_armada: "B 9074 NAP", driver: "Sopan", berat_kg: 1100, tujuan: "TPA", petugas: "Maher", catatan: "Pengangkutan lancar" }
+            ],
+            auditLogs: [
+                { timestamp: "2026-10-03 10:00:00", user: "Administrator", action: "INIT", category: "System", details: "Inisialisasi sistem dengan Google Sheets auto-sync." }
+            ],
+            syncLogs: [
+                { timestamp: "2026-10-03 10:00:00", status: "READY", count: 0, message: "Menunggu koneksi API Google Apps Script" }
+            ]
+        };
+
+        let charts = {};
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function logAudit(action, category, details) {
+            const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+            const user = state.currentUser ? state.currentUser.name : "System";
+            state.auditLogs.unshift({ timestamp: now, user, action, category, details });
+            saveState();
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toastMessage").textContent = msg;
+            document.getElementById("toastIcon").textContent = isError ? "⚠️" : "✨";
+            toast.className = `fixed bottom-5 right-5 z-50 px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold transform transition-all duration-300 flex items-center space-x-2 text-white ${isError ? 'bg-rose-600' : 'bg-slate-900'}`;
+            toast.classList.remove("translate-y-20", "opacity-0");
+            setTimeout(() => toast.classList.add("translate-y-20", "opacity-0"), 3000);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById("loginUsername").value;
+            const p = document.getElementById("loginPassword").value;
+            if (u === "admin" && p === "admin123") {
+                state.currentUser = { name: "Administrator Interceptor", role: "Super Admin" };
+                saveState();
+                logAudit("LOGIN", "Auth", "Administrator berhasil masuk ke sistem.");
+                initApp();
+                showToast("Berhasil masuk ke sistem!");
+            } else {
+                showToast("Username atau password salah!", true);
+            }
+        }
+
+        function logout() {
+            logAudit("LOGOUT", "Auth", "Pengguna keluar dari sistem.");
+            state.currentUser = null;
+            saveState();
+            document.getElementById("app").classList.add("hidden");
+            document.getElementById("loginScreen").classList.remove("hidden");
+            showToast("Berhasil keluar.");
+        }
+
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("-translate-x-full");
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll(".page-view").forEach(el => el.classList.add("hidden"));
+            document.getElementById("page-" + pageId).classList.remove("hidden");
+            document.querySelectorAll(".nav-btn").forEach(btn => {
+                if (btn.dataset.page === pageId) {
+                    btn.classList.add("bg-emerald-50", "text-emerald-700", "font-bold");
+                } else {
+                    btn.classList.remove("bg-emerald-50", "text-emerald-700", "font-bold");
+                }
+            });
+            if (window.innerWidth < 1024) {
+                document.getElementById("sidebar").classList.add("-translate-x-full");
+            }
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        function todayStr() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function initApp() {
+            if (!state.currentUser) {
+                document.getElementById("loginScreen").classList.remove("hidden");
+                document.getElementById("app").classList.add("hidden");
+                return;
+            }
+            document.getElementById("loginScreen").classList.add("hidden");
+            document.getElementById("app").classList.remove("hidden");
+            document.getElementById("currentUser").textContent = `${state.currentUser.name} (${state.currentUser.role})`;
+            document.getElementById("sheetsApiUrl").value = state.apiUrl || "";
+
+            document.getElementById("sTanggal").value = todayStr();
+            document.getElementById("sJam").value = new Date().toTimeString().slice(0, 5);
+            document.getElementById("wTanggal").value = todayStr();
+            document.getElementById("mTanggal").value = todayStr();
+
+            refreshAll();
+            updateConnectionStatusUI();
+        }
+
+        function refreshAll() {
+            renderDashboard();
+            renderSungaiTable();
+            renderWargaTable();
+            renderMuatanTable();
+            renderAuditTable();
+            renderSyncLogTable();
+            renderNeraca();
+            renderReportTable();
+        }
+
+        function saveApiUrl() {
+            const url = document.getElementById("sheetsApiUrl").value.trim();
+            state.apiUrl = url;
+            saveState();
+            logAudit("CONFIG", "Settings", "Memperbarui Google Sheets Apps Script Web App URL.");
+            showToast("URL Apps Script berhasil disimpan!");
+            updateConnectionStatusUI();
+            syncToSheets();
+        }
+
+        function updateConnectionStatusUI() {
+            const statusEl = document.getElementById("connectionStatus");
+            const syncText = document.getElementById("syncText");
+            const syncDot = document.getElementById("syncDot");
+            if (state.apiUrl) {
+                statusEl.textContent = "Status: URL Terkonfigurasi (Siap Sinkronisasi)";
+                statusEl.className = "text-xs font-semibold text-emerald-600";
+                syncText.textContent = "Sheets Terhubung";
+                syncDot.className = "w-2 h-2 rounded-full bg-emerald-400";
+            } else {
+                statusEl.textContent = "Status: URL Belum Dimasukkan (Mode Lokal Saja)";
+                statusEl.className = "text-xs font-semibold text-amber-600";
+                syncText.textContent = "Belum Terhubung";
+                syncDot.className = "w-2 h-2 rounded-full bg-amber-400";
+            }
+        }
+
+        async function syncToSheets() {
+            if (!state.apiUrl) {
+                showToast("Masukkan URL Google Apps Script di Pengaturan terlebih dahulu!", true);
+                switchPage("pengaturan");
+                return;
+            }
+
+            const syncBtnText = document.getElementById("syncText");
+            if (syncBtnText) syncBtnText.textContent = "Sedang Sinkron...";
+
+            const payload = {
+                action: "sync",
+                sungai: state.sungai,
+                warga: state.warga,
+                muatan: state.muatan
+            };
+
+            try {
+                await fetch(state.apiUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+                const totalCount = state.sungai.length + state.warga.length + state.muatan.length;
+                state.syncLogs.unshift({ timestamp: now, status: "SUCCESS", count: totalCount, message: "Sinkronisasi berhasil dikirim ke Google Sheets (sampah_sungai, sampah_warga, muatan_keluar)." });
+                saveState();
+                refreshAll();
+                showToast("Data berhasil disinkronkan ke Google Sheets!");
+            } catch (err) {
+                const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+                state.syncLogs.unshift({ timestamp: now, status: "ERROR", count: 0, message: err.toString() });
+                saveState();
+                refreshAll();
+                showToast("Gagal sinkronisasi ke Google Sheets.", true);
+            } finally {
+                updateConnectionStatusUI();
+            }
+        }
+
+        function copyAppsScriptCode() {
+            const box = document.getElementById("scriptCodeBox");
+            box.select();
+            navigator.clipboard.writeText(box.value);
+            showToast("Kode Google Apps Script disalin ke clipboard!");
+        }
+
+        function onPeriodChange() {
+            const val = document.getElementById("periodFilter").value;
+            const isCustom = val === "custom";
+            document.getElementById("customStart").classList.toggle("hidden", !isCustom);
+            document.getElementById("customEnd").classList.toggle("hidden", !isCustom);
+            renderDashboard();
+        }
+
+        function getDateRange() {
+            const mode = document.getElementById("periodFilter").value;
+            const now = new Date();
+            let start = "", end = now.toISOString().slice(0, 10);
+
+            if (mode === "today") {
+                start = end;
+            } else if (mode === "yesterday") {
+                let d = new Date(); d.setDate(d.getDate() - 1);
+                start = end = d.toISOString().slice(0, 10);
+            } else if (mode === "7days") {
+                let d = new Date(); d.setDate(d.getDate() - 6);
+                start = d.toISOString().slice(0, 10);
+            } else if (mode === "month") {
+                start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+            } else if (mode === "year") {
+                start = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+            } else if (mode === "all") {
+                start = "2000-01-01";
+            } else if (mode === "custom") {
+                start = document.getElementById("customStart").value || "2000-01-01";
+                end = document.getElementById("customEnd").value || todayStr();
+            }
+            return { start, end };
+        }
+
+        function inRange(dateStr) {
+            const { start, end } = getDateRange();
+            return dateStr >= start && dateStr <= end;
+        }
+
+        function formatKg(n) {
+            return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(n || 0) + " kg";
+        }
+
+        // --- DASHBOARD & CHARTS ---
+        function renderDashboard() {
+            const sungaiFiltered = state.sungai.filter(x => inRange(x.tanggal));
+            const wargaFiltered = state.warga.filter(x => inRange(x.tanggal));
+            const muatanFiltered = state.muatan.filter(x => inRange(x.tanggal));
+
+            const sumSungai = sungaiFiltered.reduce((acc, x) => acc + (+x.berat_kg || 0), 0);
+            const sumWarga = wargaFiltered.reduce((acc, x) => acc + (+x.berat_kg || 0), 0);
+            const sumTruk = muatanFiltered.reduce((acc, x) => acc + (+x.berat_kg || 0), 0);
+
+            document.getElementById("statSungai").textContent = formatKg(sumSungai);
+            document.getElementById("countSungai").textContent = `${sungaiFiltered.length} catatan terekam`;
+
+            document.getElementById("statWarga").textContent = formatKg(sumWarga);
+            document.getElementById("countWarga").textContent = `${wargaFiltered.length} catatan terekam`;
+
+            document.getElementById("statTruk").textContent = (sumTruk / 1000).toLocaleString("id-ID", { maximumFractionDigits: 2 }) + " Ton";
+            document.getElementById("countTruk").textContent = `${muatanFiltered.length} pengangkutan`;
+
+            const allRecs = [
+                ...sungaiFiltered.map(x => ({ ...x, source: 'Sungai', loc: x.lokasi })),
+                ...wargaFiltered.map(x => ({ ...x, source: 'Warga', loc: x.wilayah }))
+            ].sort((a, b) => b.tanggal.localeCompare(a.tanggal)).slice(0, 5);
+
+            document.getElementById("recentTable").innerHTML = allRecs.length ? allRecs.map(r => `
+                <tr>
+                    <td class="p-3">${r.tanggal} ${r.jam || ''}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.source === 'Sungai' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'}">${r.source}</span></td>
+                    <td class="p-3 font-medium">${r.loc}</td>
+                    <td class="p-3 font-bold">${formatKg(r.berat_kg)}</td>
+                    <td class="p-3 text-slate-500">${r.petugas || '-'}</td>
+                </tr>
+            `).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Belum ada data pada periode ini.</td></tr>`;
+
+            renderCharts(sungaiFiltered, wargaFiltered);
+        }
+
+        function renderCharts(sungai, warga) {
+            const datesMap = {};
+            [...sungai, ...warga].forEach(x => {
+                datesMap[x.tanggal] = (datesMap[x.tanggal] || 0) + (+x.berat_kg || 0);
+            });
+            const sortedDates = Object.keys(datesMap).sort();
+            const dailyWeights = sortedDates.map(d => datesMap[d]);
+
+            const ctxDaily = document.getElementById("dailyChart").getContext("2d");
+            if (charts.daily) charts.daily.destroy();
+            charts.daily = new Chart(ctxDaily, {
+                type: 'line',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{ label: 'Total Masuk (kg)', data: dailyWeights, borderColor: '#059669', backgroundColor: 'rgba(5, 150, 105, 0.1)', tension: 0.3, fill: true }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            const sumS = sungai.reduce((a, b) => a + (+b.berat_kg || 0), 0);
+            const sumW = warga.reduce((a, b) => a + (+b.berat_kg || 0), 0);
+
+            const ctxSource = document.getElementById("sourceChart").getContext("2d");
+            if (charts.source) charts.source.destroy();
+            charts.source = new Chart(ctxSource, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sungai', 'Warga'],
+                    datasets: [{ data: [sumS, sumW], backgroundColor: ['#3b82f6', '#f59e0b'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        // --- CRUD SUNGAI ---
+        function saveSungai(e) {
+            e.preventDefault();
+            const id = document.getElementById("sungaiId").value || 's_' + Date.now();
+            const obj = {
+                id,
+                tanggal: document.getElementById("sTanggal").value,
+                jam: document.getElementById("sJam").value,
+                lokasi: document.getElementById("sLokasi").value,
+                petugas: document.getElementById("sPetugas").value,
+                berat_kg: parseFloat(document.getElementById("sBerat").value) || 0,
+                jenis_sampah: document.getElementById("sJenis").value,
+                metode: document.getElementById("sMetode").value,
+                catatan: document.getElementById("sCatatan").value
+            };
+
+            const idx = state.sungai.findIndex(x => x.id === id);
+            if (idx >= 0) {
+                state.sungai[idx] = obj;
+                logAudit("UPDATE", "sampah_sungai", `Mengubah data sampah sungai ID: ${id}`);
+            } else {
+                state.sungai.unshift(obj);
+                logAudit("INSERT", "sampah_sungai", `Menambah data sampah sungai ${obj.berat_kg} kg di ${obj.lokasi}`);
+            }
+
+            saveState();
+            resetSungaiForm();
+            showToast("Data sampah sungai disimpan & disinkronkan!");
+            switchPage("sungai");
+            refreshAll();
+            syncToSheets();
+        }
+
+        function resetSungaiForm() {
+            document.getElementById("sungaiForm").reset();
+            document.getElementById("sungaiId").value = "";
+            document.getElementById("sTanggal").value = todayStr();
+            document.getElementById("sJam").value = new Date().toTimeString().slice(0, 5);
+        }
+
+        function renderSungaiTable() {
+            const q = (document.getElementById("searchSungai").value || "").toLowerCase();
+            const filterJ = document.getElementById("filterJenisSungai").value;
+            const filtered = state.sungai.filter(x => (!filterJ || x.jenis_sampah === filterJ) && (x.lokasi.toLowerCase().includes(q) || (x.petugas && x.petugas.toLowerCase().includes(q)) || x.jenis_sampah.toLowerCase().includes(q)));
+
+            document.getElementById("sungaiTableBody").innerHTML = filtered.length ? filtered.map(x => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${x.tanggal} <span class="text-slate-400 text-[10px]">${x.jam || ''}</span></td>
+                    <td class="p-3 font-medium">${x.lokasi}</td>
+                    <td class="p-3">${x.petugas || '-'}</td>
+                    <td class="p-3 font-bold text-emerald-700">${formatKg(x.berat_kg)}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">${x.jenis_sampah}</span></td>
+                    <td class="p-3 text-slate-500">${x.metode}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="editSungai('${x.id}')" class="text-emerald-600 hover:text-emerald-800 font-semibold">Edit</button>
+                        <button onclick="deleteSungai('${x.id}')" class="text-rose-600 hover:text-rose-800 font-semibold">Hapus</button>
+                    </td>
+                </tr>
+            `).join('') : `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada data sampah sungai.</td></tr>`;
+        }
+
+        function editSungai(id) {
+            const x = state.sungai.find(s => s.id === id);
+            if (!x) return;
+            switchPage("input-sungai");
+            document.getElementById("sungaiId").value = x.id;
+            document.getElementById("sTanggal").value = x.tanggal;
+            document.getElementById("sJam").value = x.jam || "";
+            document.getElementById("sLokasi").value = x.lokasi;
+            document.getElementById("sPetugas").value = x.petugas || "";
+            document.getElementById("sBerat").value = x.berat_kg;
+            document.getElementById("sJenis").value = x.jenis_sampah;
+            document.getElementById("sMetode").value = x.metode;
+            document.getElementById("sCatatan").value = x.catatan;
+        }
+
+        function deleteSungai(id) {
+            if (!confirm("Hapus data ini?")) return;
+            state.sungai = state.sungai.filter(x => x.id !== id);
+            logAudit("DELETE", "sampah_sungai", `Menghapus data sampah sungai ID: ${id}`);
+            saveState();
+            showToast("Data dihapus.");
+            refreshAll();
+            syncToSheets();
+        }
+
+        // --- CRUD WARGA ---
+        function saveWarga(e) {
+            e.preventDefault();
+            const id = document.getElementById("wargaId").value || 'w_' + Date.now();
+            const obj = {
+                id,
+                tanggal: document.getElementById("wTanggal").value,
+                wilayah: document.getElementById("wWilayah").value,
+                rt_rw: document.getElementById("wRtRw").value,
+                petugas: document.getElementById("wPetugas").value,
+                jumlah_warga: parseInt(document.getElementById("wJumlah").value) || 0,
+                berat_kg: parseFloat(document.getElementById("wBerat").value) || 0,
+                jenis_sampah: document.getElementById("wJenis").value,
+                catatan: document.getElementById("wCatatan").value
+            };
+
+            const idx = state.warga.findIndex(x => x.id === id);
+            if (idx >= 0) {
+                state.warga[idx] = obj;
+                logAudit("UPDATE", "sampah_warga", `Mengubah data sampah warga ID: ${id}`);
+            } else {
+                state.warga.unshift(obj);
+                logAudit("INSERT", "sampah_warga", `Menambah data sampah warga ${obj.berat_kg} kg di ${obj.wilayah}`);
+            }
+
+            saveState();
+            resetWargaForm();
+            showToast("Data sampah warga disimpan & disinkronkan!");
+            switchPage("warga");
+            refreshAll();
+            syncToSheets();
+        }
+
+        function resetWargaForm() {
+            document.getElementById("wargaForm").reset();
+            document.getElementById("wargaId").value = "";
+            document.getElementById("wTanggal").value = todayStr();
+            document.getElementById("wWilayah").value = "Desa Tanjung Burung / Kali Baru";
+        }
+
+        function renderWargaTable() {
+            const q = (document.getElementById("searchWarga").value || "").toLowerCase();
+            const filtered = state.warga.filter(x => x.wilayah.toLowerCase().includes(q) || (x.petugas && x.petugas.toLowerCase().includes(q)));
+
+            document.getElementById("wargaTableBody").innerHTML = filtered.length ? filtered.map(x => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${x.tanggal}</td>
+                    <td class="p-3 font-medium">${x.wilayah}</td>
+                    <td class="p-3">${x.rt_rw || '-'}</td>
+                    <td class="p-3">${x.petugas || '-'}</td>
+                    <td class="p-3 font-bold text-amber-700">${formatKg(x.berat_kg)}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700">${x.jenis_sampah}</span></td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="editWarga('${x.id}')" class="text-amber-600 hover:text-amber-800 font-semibold">Edit</button>
+                        <button onclick="deleteWarga('${x.id}')" class="text-rose-600 hover:text-rose-800 font-semibold">Hapus</button>
+                    </td>
+                </tr>
+            `).join('') : `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada data sampah warga.</td></tr>`;
+        }
+
+        function editWarga(id) {
+            const x = state.warga.find(s => s.id === id);
+            if (!x) return;
+            switchPage("input-warga");
+            document.getElementById("wargaId").value = x.id;
+            document.getElementById("wTanggal").value = x.tanggal;
+            document.getElementById("wWilayah").value = x.wilayah;
+            document.getElementById("wRtRw").value = x.rt_rw;
+            document.getElementById("wPetugas").value = x.petugas || "";
+            document.getElementById("wJumlah").value = x.jumlah_warga;
+            document.getElementById("wBerat").value = x.berat_kg;
+            document.getElementById("wJenis").value = x.jenis_sampah;
+            document.getElementById("wCatatan").value = x.catatan;
+        }
+
+        function deleteWarga(id) {
+            if (!confirm("Hapus data ini?")) return;
+            state.warga = state.warga.filter(x => x.id !== id);
+            logAudit("DELETE", "sampah_warga", `Menghapus data sampah warga ID: ${id}`);
+            saveState();
+            showToast("Data dihapus.");
+            refreshAll();
+            syncToSheets();
+        }
+
+        // --- CRUD MUATAN KELUAR ---
+        function saveMuatan(e) {
+            e.preventDefault();
+            let rawBerat = parseFloat(document.getElementById("mBerat").value) || 0;
+            const unit = document.getElementById("mUnit").value;
+            const berat_kg = unit === "ton" ? rawBerat * 1000 : rawBerat;
+
+            const id = document.getElementById("muatanId").value || 'm_' + Date.now();
+            const obj = {
+                id,
+                tanggal: document.getElementById("mTanggal").value,
+                nomor_armada: document.getElementById("mNomorArmada").value,
+                driver: document.getElementById("mDriver").value,
+                berat_kg,
+                tujuan: document.getElementById("mTujuan").value,
+                petugas: document.getElementById("mPetugas").value,
+                catatan: document.getElementById("mCatatan").value
+            };
+
+            const idx = state.muatan.findIndex(x => x.id === id);
+            if (idx >= 0) {
+                state.muatan[idx] = obj;
+                logAudit("UPDATE", "muatan_keluar", `Mengubah data muatan truk ID: ${id}`);
+            } else {
+                state.muatan.unshift(obj);
+                logAudit("INSERT", "muatan_keluar", `Menambah muatan truk ${obj.berat_kg} kg armada ${obj.nomor_armada}`);
+            }
+
+            saveState();
+            resetMuatanForm();
+            showToast("Muatan keluar disimpan & disinkronkan!");
+            switchPage("muatan");
+            refreshAll();
+            syncToSheets();
+        }
+
+        function resetMuatanForm() {
+            document.getElementById("muatanForm").reset();
+            document.getElementById("muatanId").value = "";
+            document.getElementById("mTanggal").value = todayStr();
+            document.getElementById("mTujuan").value = "TPA";
+        }
+
+        function renderMuatanTable() {
+            const q = (document.getElementById("searchMuatan").value || "").toLowerCase();
+            const filtered = state.muatan.filter(x => x.nomor_armada.toLowerCase().includes(q) || (x.driver && x.driver.toLowerCase().includes(q)) || x.tujuan.toLowerCase().includes(q));
+
+            document.getElementById("muatanTableBody").innerHTML = filtered.length ? filtered.map(m => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${m.tanggal}</td>
+                    <td class="p-3 font-medium">${m.nomor_armada}</td>
+                    <td class="p-3">${m.driver || '-'}</td>
+                    <td class="p-3 font-bold text-slate-900">${formatKg(m.berat_kg)}</td>
+                    <td class="p-3 text-slate-500">${m.tujuan}</td>
+                    <td class="p-3">${m.petugas || '-'}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="editMuatan('${m.id}')" class="text-emerald-600 hover:text-emerald-800 font-semibold">Edit</button>
+                        <button onclick="deleteMuatan('${m.id}')" class="text-rose-600 hover:text-rose-800 font-semibold">Hapus</button>
+                    </td>
+                </tr>
+            `).join('') : `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada data muatan keluar.</td></tr>`;
+        }
+
+        function editMuatan(id) {
+            const m = state.muatan.find(x => x.id === id);
+            if (!m) return;
+            switchPage("input-muatan");
+            document.getElementById("muatanId").value = m.id;
+            document.getElementById("mTanggal").value = m.tanggal;
+            document.getElementById("mNomorArmada").value = m.nomor_armada;
+            document.getElementById("mDriver").value = m.driver || "";
+            document.getElementById("mBerat").value = m.berat_kg;
+            document.getElementById("mUnit").value = "kg";
+            document.getElementById("mTujuan").value = m.tujuan;
+            document.getElementById("mPetugas").value = m.petugas || "";
+            document.getElementById("mCatatan").value = m.catatan || "";
+        }
+
+        function deleteMuatan(id) {
+            if (!confirm("Hapus catatan muatan ini?")) return;
+            state.muatan = state.muatan.filter(x => x.id !== id);
+            logAudit("DELETE", "muatan_keluar", `Menghapus data muatan truk ID: ${id}`);
+            saveState();
+            showToast("Data dihapus.");
+            refreshAll();
+            syncToSheets();
+        }
+
+        // --- AUDIT & SYNC LOGS ---
+        function renderAuditTable() {
+            const tbody = document.getElementById("auditTableBody");
+            if (!tbody) return;
+            tbody.innerHTML = state.auditLogs.map(l => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-400">${l.timestamp}</td>
+                    <td class="p-3 font-semibold">${l.user}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${l.action}</span></td>
+                    <td class="p-3 font-medium text-emerald-700">${l.category}</td>
+                    <td class="p-3 text-slate-600">${l.details}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSyncLogTable() {
+            const tbody = document.getElementById("syncLogTableBody");
+            if (!tbody) return;
+            tbody.innerHTML = state.syncLogs.map(s => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 text-slate-400">${s.timestamp}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-700' : s.status === 'ERROR' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}">${s.status}</span></td>
+                    <td class="p-3 font-semibold">${s.count} record</td>
+                    <td class="p-3 text-slate-600">${s.message}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- NERACA ---
+        function renderNeraca() {
+            const sumS = state.sungai.reduce((a, b) => a + (+b.berat_kg || 0), 0);
+            const sumW = state.warga.reduce((a, b) => a + (+b.berat_kg || 0), 0);
+            const sumMasuk = sumS + sumW;
+            const sumKeluar = state.muatan.reduce((a, b) => a + (+b.berat_kg || 0), 0);
+
+            document.getElementById("nSungai").textContent = formatKg(sumS);
+            document.getElementById("nWarga").textContent = formatKg(sumW);
+            document.getElementById("nMasuk").textContent = formatKg(sumMasuk);
+            document.getElementById("nKeluar").textContent = formatKg(sumKeluar);
+        }
+
+        // --- LAPORAN ---
+        function renderReportTable() {
+            const loc = (document.getElementById("repLokasi").value || "").toLowerCase();
+            const typ = document.getElementById("repJenis").value;
+            const off = (document.getElementById("repPetugas").value || "").toLowerCase();
+
+            const combined = [
+                ...state.sungai.map(x => ({ ...x, source: 'Sungai', loc: x.lokasi, desc: x.jenis_sampah })),
+                ...state.warga.map(x => ({ ...x, source: 'Warga', loc: x.wilayah, desc: x.jenis_sampah })),
+                ...state.muatan.map(x => ({ ...x, source: 'Truk Keluar', loc: x.nomor_armada + (x.driver ? ' (' + x.driver + ')' : ''), desc: x.tujuan, jenis_sampah: 'Muatan' }))
+            ].filter(x => (!loc || x.loc.toLowerCase().includes(loc)) && (!typ || x.desc === typ || x.source === 'Truk Keluar') && (!off || ((x.petugas && x.petugas.toLowerCase().includes(off)) || (x.driver && x.driver.toLowerCase().includes(off)))));
+
+            document.getElementById("reportTableBody").innerHTML = combined.length ? combined.map(x => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3">${x.tanggal}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${x.source === 'Sungai' ? 'bg-blue-50 text-blue-700' : x.source === 'Warga' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">${x.source}</span></td>
+                    <td class="p-3 font-medium">${x.loc}</td>
+                    <td class="p-3 font-bold">${formatKg(x.berat_kg)}</td>
+                    <td class="p-3">${x.petugas || x.driver || '-'}</td>
+                    <td class="p-3">${x.desc}</td>
+                </tr>
+            `).join('') : `<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada data laporan.</td></tr>`;
+        }
+
+        // --- EXPORT & BACKUP ---
+        function exportExcel() {
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.sungai), "sampah_sungai");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.warga), "sampah_warga");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.muatan), "muatan_keluar");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.auditLogs), "audit_logs");
+            XLSX.writeFile(wb, `River_Impact_Cisadane_${todayStr()}.xlsx`);
+            showToast("File Excel berhasil diunduh!");
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.text("Laporan River Impact Cisadane — Interceptor 020", 14, 20);
+            doc.setFontSize(10);
+            doc.text(`Tanggal Cetak: ${new Date().toLocaleString("id-ID")}`, 14, 28);
+
+            const rows = [
+                ...state.sungai.map(x => [x.tanggal, 'Sungai', x.lokasi, formatKg(x.berat_kg), x.petugas || '-']),
+                ...state.warga.map(x => [x.tanggal, 'Warga', x.wilayah, formatKg(x.berat_kg), x.petugas || '-']),
+                ...state.muatan.map(x => [x.tanggal, 'Truk Keluar', `${x.nomor_armada} (${x.tujuan})`, formatKg(x.berat_kg), x.driver || '-'])
+            ];
+
+            doc.autoTable({
+                startY: 35,
+                head: [['Tanggal', 'Sumber', 'Lokasi / Tujuan', 'Berat', 'Petugas / Sopir']],
+                body: rows,
+                styles: { fontSize: 8 }
+            });
+
+            doc.save(`Laporan_Cisadane_${todayStr()}.pdf`);
+            showToast("Dokumen PDF berhasil dicetak!");
+        }
+
+        function backupJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `backup_cisadane_${todayStr()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast("Backup JSON berhasil diunduh.");
+        }
+
+        function restoreJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const parsed = JSON.parse(evt.target.result);
+                    if (!parsed.sungai || !parsed.warga) throw new Error("Format tidak valid");
+                    state = parsed;
+                    saveState();
+                    refreshAll();
+                    showToast("Data berhasil dipulihkan dari file backup!");
+                } catch (err) {
+                    showToast("File backup tidak valid!", true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetAllData() {
+            if (!confirm("PERINGATAN: Semua data transaksi akan dihapus permanen!")) return;
+            state.sungai = [];
+            state.warga = [];
+            state.muatan = [];
+            state.auditLogs = [];
+            state.syncLogs = [];
+            logAudit("RESET", "System", "Mengatur ulang semua data lokal sistem.");
+            saveState();
+            refreshAll();
+            showToast("Semua data telah direset.");
+        }
+
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
+```
